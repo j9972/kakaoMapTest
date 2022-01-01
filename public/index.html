@@ -8,27 +8,18 @@
     <meta
       name="description"
       content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+      />
+      <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+      
+      <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+      
+      <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=8c6a7501959db7f293211edf085f78ef"></script>
 
     <title>kakaomap test page</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root">
-    <div id="map" style="width:500px;height:400px;"></div>
-      <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=8c6a7501959db7f293211edf085f78ef"></script>
-      <script>
-        var container = document.getElementById('map');
-        var options = {
-          center: new kakao.maps.LatLng(33.450701, 126.570667), // 카카오 제주 본사 지점
-          level: 3
-        };
-    
-        var map = new kakao.maps.Map(container, options);
-      </script>
     </div>
   </body>
 </html>
