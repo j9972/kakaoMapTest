@@ -5,21 +5,152 @@ const KakaoMap = () => {
   const { kakao } = window;
 
   useEffect(() => {
+    const MARKER_WIDTH = 33, // 기본, 클릭 마커의 너비
+      MARKER_HEIGHT = 36, // 기본, 클릭 마커의 높이
+      OFFSET_X = 12, // 기본, 클릭 마커의 기준 X좌표
+      OFFSET_Y = MARKER_HEIGHT, // 기본, 클릭 마커의 기준 Y좌표
+      OVER_MARKER_WIDTH = 40, // 오버 마커의 너비
+      OVER_MARKER_HEIGHT = 42, // 오버 마커의 높이
+      OVER_OFFSET_X = 13, // 오버 마커의 기준 X좌표
+      OVER_OFFSET_Y = OVER_MARKER_HEIGHT, // 오버 마커의 기준 Y좌표
+      SPRITE_MARKER_URL =
+        "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markers_sprites2.png", // 스프라이트 마커 이미지 URL
+      SPRITE_WIDTH = 126, // 스프라이트 이미지 너비
+      SPRITE_HEIGHT = 146, // 스프라이트 이미지 높이
+      SPRITE_GAP = 10; // 스프라이트 이미지에서 마커간 간격
+
+    const markerSize = new kakao.maps.Size(MARKER_WIDTH, MARKER_HEIGHT), // 기본, 클릭 마커의 크기
+      markerOffset = new kakao.maps.Point(OFFSET_X, OFFSET_Y), // 기본, 클릭 마커의 기준좌표
+      overMarkerSize = new kakao.maps.Size(
+        OVER_MARKER_WIDTH,
+        OVER_MARKER_HEIGHT
+      ), // 오버 마커의 크기
+      overMarkerOffset = new kakao.maps.Point(OVER_OFFSET_X, OVER_OFFSET_Y), // 오버 마커의 기준 좌표
+      spriteImageSize = new kakao.maps.Size(SPRITE_WIDTH, SPRITE_HEIGHT); // 스프라이트 이미지의 크기
+
+    var positions = [
+        // 마커의 위치
+        new kakao.maps.LatLng(33.44975, 126.56967),
+        new kakao.maps.LatLng(33.450579, 126.56956),
+        new kakao.maps.LatLng(33.4506468, 126.5707),
+      ],
+      selectedMarker = null; // 클릭한 마커를 담을 변수
+
     let container = document.querySelector("#map");
     let options = {
-      center: new kakao.maps.LatLng(37.265710998504154, 127.09378818221158),
+      center: new kakao.maps.LatLng(33.44975, 126.56967),
       level: 3,
+      // level: 9~10 정도가 우리가 설정할 값
     };
 
     let map = new kakao.maps.Map(container, options);
-    let markerPosition = new kakao.maps.LatLng(
-      37.365264512305174,
-      127.10676860117488
-    );
-    let marker = new kakao.maps.Marker({
-      position: markerPosition,
-    });
-    marker.setMap(map);
+
+    for (var i = 0, len = positions.length; i < len; i++) {
+      const gapX = MARKER_WIDTH + SPRITE_GAP, // 스프라이트 이미지에서 마커로 사용할 이미지 X좌표 간격 값
+        originY = (MARKER_HEIGHT + SPRITE_GAP) * i, // 스프라이트 이미지에서 기본, 클릭 마커로 사용할 Y좌표 값
+        overOriginY = (OVER_MARKER_HEIGHT + SPRITE_GAP) * i, // 스프라이트 이미지에서 오버 마커로 사용할 Y좌표 값
+        normalOrigin = new kakao.maps.Point(0, originY), // 스프라이트 이미지에서 기본 마커로 사용할 영역의 좌상단 좌표
+        clickOrigin = new kakao.maps.Point(gapX, originY), // 스프라이트 이미지에서 마우스오버 마커로 사용할 영역의 좌상단 좌표
+        overOrigin = new kakao.maps.Point(gapX * 2, overOriginY); // 스프라이트 이미지에서 클릭 마커로 사용할 영역의 좌상단 좌표
+
+      // 마커를 생성하고 지도위에 표시합니다
+      addMarker(positions[i], normalOrigin, overOrigin, clickOrigin);
+    }
+
+    // 마커를 생성하고 지도 위에 표시하고, 마커에 mouseover, mouseout, click 이벤트를 등록하는 함수입니다
+    const addMarker = (position, normalOrigin, overOrigin, clickOrigin) => {
+      // 기본 마커이미지, 오버 마커이미지, 클릭 마커이미지를 생성합니다
+      const normalImage = createMarkerImage(
+          markerSize,
+          markerOffset,
+          normalOrigin
+        ),
+        overImage = createMarkerImage(
+          overMarkerSize,
+          overMarkerOffset,
+          overOrigin
+        ),
+        clickImage = createMarkerImage(markerSize, markerOffset, clickOrigin);
+
+      // 마커를 생성하고 이미지는 기본 마커 이미지를 사용합니다
+      let marker = new kakao.maps.Marker({
+        map: map,
+        position: position,
+        image: normalImage,
+        clickable: true,
+      });
+
+      marker.setMap(map);
+      marker.setDraggable(true);
+
+      // 마커 객체에 마커아이디와 마커의 기본 이미지를 추가합니다
+      marker.normalImage = normalImage;
+
+      // 마커에 mouseover 이벤트를 등록합니다
+      kakao.maps.event.addListener(marker, "mouseover", function () {
+        // 클릭된 마커가 없고, mouseover된 마커가 클릭된 마커가 아니면
+        // 마커의 이미지를 오버 이미지로 변경합니다
+        if (!selectedMarker || selectedMarker !== marker) {
+          marker.setImage(overImage);
+        }
+      });
+
+      // 마커에 mouseout 이벤트를 등록합니다
+      kakao.maps.event.addListener(marker, "mouseout", function () {
+        // 클릭된 마커가 없고, mouseout된 마커가 클릭된 마커가 아니면
+        // 마커의 이미지를 기본 이미지로 변경합니다
+        if (!selectedMarker || selectedMarker !== marker) {
+          marker.setImage(normalImage);
+        }
+      });
+
+      let iwContent =
+          '<div style="padding:5px;">info of hotel or restaurant</div>',
+        iwRemoveable = true; // removeable 속성을 ture 로 설정하면 인포윈도우를 닫을 수 있는 x버튼이 표시됩니다
+
+      // 인포윈도우를 생성합니다
+      let infowindow = new kakao.maps.InfoWindow({
+        map: map, // 인포윈도우가 표시될 지도
+        content: iwContent,
+        removable: iwRemoveable,
+        // x표시가 아니라 다른 마커 선택시 자동으로 없어지게끔 하기
+      });
+
+      // 마커에 클릭이벤트를 등록합니다
+      kakao.maps.event.addListener(marker, "click", () => {
+        // 마커 위에 인포윈도우를 표시합니다
+        infowindow.open(map, marker);
+        // 클릭된 마커가 없고, click 마커가 클릭된 마커가 아니면
+        // 마커의 이미지를 클릭 이미지로 변경합니다
+        if (!selectedMarker || selectedMarker !== marker) {
+          // 클릭된 마커 객체가 null이 아니면
+          // 클릭된 마커의 이미지를 기본 이미지로 변경하고
+          !!selectedMarker &&
+            selectedMarker.setImage(selectedMarker.normalImage);
+
+          // 현재 클릭된 마커의 이미지는 클릭 이미지로 변경합니다
+          marker.setImage(clickImage);
+        }
+
+        // 클릭된 마커를 현재 클릭된 마커 객체로 설정합니다
+        selectedMarker = marker;
+      });
+    };
+
+    // MakrerImage 객체를 생성하여 반환하는 함수입니다
+    const createMarkerImage = (markerSize, offset, spriteOrigin) => {
+      const markerImage = new kakao.maps.MarkerImage(
+        SPRITE_MARKER_URL, // 스프라이트 마커 이미지 URL
+        markerSize, // 마커의 크기
+        {
+          offset: offset, // 마커 이미지에서의 기준 좌표
+          spriteOrigin: spriteOrigin, // 스트라이프 이미지 중 사용할 영역의 좌상단 좌표
+          spriteSize: spriteImageSize, // 스프라이트 이미지의 크기
+        }
+      );
+
+      return markerImage;
+    };
   }, []);
 
   return (
@@ -32,38 +163,6 @@ const KakaoMap = () => {
 export default KakaoMap;
 
 /* 
-// 2. 지도 이동
-function setCenter() {            
-    // 이동할 위도 경도 위치를 생성합니다 
-    let moveLatLon = new kakao.maps.LatLng(33.452613, 126.570888);
-    
-    // 지도 중심을 이동 시킵니다
-    map.setCenter(moveLatLon);
-}
-
-function panTo() {
-    // 이동할 위도 경도 위치를 생성합니다 
-    let moveLatLon = new kakao.maps.LatLng(33.450580, 126.574942);
-
-    map.panTo(moveLatLon);            
-} 
-
-// 3. 지도 레벨
-function zoomIn() {        
-    // 현재 지도의 레벨을 얻어옵니다
-    let level = map.getLevel();
-    
-    // 지도를 1레벨 내립니다 (지도가 확대됩니다)
-    map.setLevel(level - 1);
-}    
-
-function zoomOut() {    
-    // 현재 지도의 레벨을 얻어옵니다
-    let level = map.getLevel(); 
-    
-    // 지도를 1레벨 올립니다 (지도가 축소됩니다)
-    map.setLevel(level + 1);
-} 
 
 // 4. 클릭 이벤트 & 마커 찍기 -> 우리가 할거는 클릭 이벤트 발생시 위도, 경도를 알려줄게 아니라 그 장소에 대한 정보를 불러올것
 // 지도를 클릭한 위치에 표출할 마커입니다
@@ -92,37 +191,6 @@ kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
     
 });
 
-// 5. 드래그 가능한 마커 생성 & 마커에 클릭 이벤트 생성
-// 마커가 표시될 위치입니다 
-let markerPosition = new kakao.maps.LatLng(33.450701, 126.570667); 
-
-// 마커를 생성합니다
-let marker = new kakao.maps.Marker({
-    position: markerPosition,
-    clickable: true
-});
-
-// 마커가 지도 위에 표시되도록 설정합니다
-marker.setMap(map);
-
-// 마커가 드래그 가능하도록 설정합니다 
-marker.setDraggable(true); 
-
-// 마커를 클릭했을 때 마커 위에 표시할 인포윈도우를 생성합니다
-let iwContent = '<div style="padding:5px;">Hello World!</div>', // 인포윈도우에 표출될 내용으로 HTML 문자열이나 document element가 가능합니다
-    iwRemoveable = true; // removeable 속성을 ture 로 설정하면 인포윈도우를 닫을 수 있는 x버튼이 표시됩니다
-
-// 인포윈도우를 생성합니다
-let infowindow = new kakao.maps.InfoWindow({
-    content : iwContent,
-    removable : iwRemoveable
-});
-
-// 마커에 클릭이벤트를 등록합니다
-kakao.maps.event.addListener(marker, 'click', function() {
-      // 마커 위에 인포윈도우를 표시합니다
-      infowindow.open(map, marker);  
-});
 
 // 6. 마커마다 다른 이미지를 넣어서 호텔이나 가게등을 구별할 수 있다.
 // 커피숍 마커가 표시될 좌표 배열입니다
