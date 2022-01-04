@@ -28,7 +28,7 @@ const KakaoMap = () => {
       overMarkerOffset = new kakao.maps.Point(OVER_OFFSET_X, OVER_OFFSET_Y), // 오버 마커의 기준 좌표
       spriteImageSize = new kakao.maps.Size(SPRITE_WIDTH, SPRITE_HEIGHT); // 스프라이트 이미지의 크기
 
-    var positions = [
+    let positions = [
         // 마커의 위치
         new kakao.maps.LatLng(33.44975, 126.56967),
         new kakao.maps.LatLng(33.450579, 126.56956),
@@ -45,7 +45,7 @@ const KakaoMap = () => {
 
     let map = new kakao.maps.Map(container, options);
 
-    for (var i = 0, len = positions.length; i < len; i++) {
+    for (let i = 0, len = positions.length; i < len; i++) {
       const gapX = MARKER_WIDTH + SPRITE_GAP, // 스프라이트 이미지에서 마커로 사용할 이미지 X좌표 간격 값
         originY = (MARKER_HEIGHT + SPRITE_GAP) * i, // 스프라이트 이미지에서 기본, 클릭 마커로 사용할 Y좌표 값
         overOriginY = (OVER_MARKER_HEIGHT + SPRITE_GAP) * i, // 스프라이트 이미지에서 오버 마커로 사용할 Y좌표 값
@@ -58,9 +58,9 @@ const KakaoMap = () => {
     }
 
     // 마커를 생성하고 지도 위에 표시하고, 마커에 mouseover, mouseout, click 이벤트를 등록하는 함수입니다
-    const addMarker = (position, normalOrigin, overOrigin, clickOrigin) => {
+    function addMarker(position, normalOrigin, overOrigin, clickOrigin) {
       // 기본 마커이미지, 오버 마커이미지, 클릭 마커이미지를 생성합니다
-      const normalImage = createMarkerImage(
+      let normalImage = createMarkerImage(
           markerSize,
           markerOffset,
           normalOrigin
@@ -75,9 +75,11 @@ const KakaoMap = () => {
       // 마커를 생성하고 이미지는 기본 마커 이미지를 사용합니다
       let marker = new kakao.maps.Marker({
         map: map,
-        position: position,
         image: normalImage,
         clickable: true,
+        // 클릭 위치에 마커 생성
+        // position: map.getCenter(),
+        position: position,
       });
 
       marker.setMap(map);
@@ -110,14 +112,14 @@ const KakaoMap = () => {
 
       // 인포윈도우를 생성합니다
       let infowindow = new kakao.maps.InfoWindow({
-        map: map, // 인포윈도우가 표시될 지도
+        //map: map, // 인포윈도우가 표시될 지도
         content: iwContent,
         removable: iwRemoveable,
         // x표시가 아니라 다른 마커 선택시 자동으로 없어지게끔 하기
       });
 
       // 마커에 클릭이벤트를 등록합니다
-      kakao.maps.event.addListener(marker, "click", () => {
+      kakao.maps.event.addListener(marker, "click", (mouseEvent) => {
         // 마커 위에 인포윈도우를 표시합니다
         infowindow.open(map, marker);
         // 클릭된 마커가 없고, click 마커가 클릭된 마커가 아니면
@@ -132,13 +134,24 @@ const KakaoMap = () => {
           marker.setImage(clickImage);
         }
 
+        // 클릭한 위도, 경도 정보를 가져옵니다
+        let latlng = mouseEvent.latLng;
+
+        // 마커 위치를 클릭한 위치로 옮깁니다
+        marker.setPosition(latlng);
+
+        let message = "클릭한 위치의 위도는 " + latlng.getLat() + " 이고, ";
+        message += "경도는 " + latlng.getLng() + " 입니다";
+
+        let resultDiv = document.getElementById("clickLatlng");
+        resultDiv.innerHTML = message;
+
         // 클릭된 마커를 현재 클릭된 마커 객체로 설정합니다
         selectedMarker = marker;
       });
-    };
+    }
 
-    // MakrerImage 객체를 생성하여 반환하는 함수입니다
-    const createMarkerImage = (markerSize, offset, spriteOrigin) => {
+    function createMarkerImage(markerSize, offset, spriteOrigin) {
       const markerImage = new kakao.maps.MarkerImage(
         SPRITE_MARKER_URL, // 스프라이트 마커 이미지 URL
         markerSize, // 마커의 크기
@@ -148,9 +161,10 @@ const KakaoMap = () => {
           spriteSize: spriteImageSize, // 스프라이트 이미지의 크기
         }
       );
-
       return markerImage;
-    };
+    }
+
+    // MakrerImage 객체를 생성하여 반환하는 함수입니다
   }, []);
 
   return (
@@ -163,34 +177,6 @@ const KakaoMap = () => {
 export default KakaoMap;
 
 /* 
-
-// 4. 클릭 이벤트 & 마커 찍기 -> 우리가 할거는 클릭 이벤트 발생시 위도, 경도를 알려줄게 아니라 그 장소에 대한 정보를 불러올것
-// 지도를 클릭한 위치에 표출할 마커입니다
-let marker = new kakao.maps.Marker({ 
-    // 지도 중심좌표에 마커를 생성합니다 
-    position: map.getCenter() 
-}); 
-// 지도에 마커를 표시합니다
-marker.setMap(map);
-
-// 지도에 클릭 이벤트를 등록합니다
-// 지도를 클릭하면 마지막 파라미터로 넘어온 함수를 호출합니다
-kakao.maps.event.addListener(map, 'click', function(mouseEvent) {        
-    
-    // 클릭한 위도, 경도 정보를 가져옵니다 
-    let latlng = mouseEvent.latLng; 
-    
-    // 마커 위치를 클릭한 위치로 옮깁니다
-    marker.setPosition(latlng);
-    
-    let message = '클릭한 위치의 위도는 ' + latlng.getLat() + ' 이고, ';
-    message += '경도는 ' + latlng.getLng() + ' 입니다';
-    
-    let resultDiv = document.getElementById('clickLatlng'); 
-    resultDiv.innerHTML = message;
-    
-});
-
 
 // 6. 마커마다 다른 이미지를 넣어서 호텔이나 가게등을 구별할 수 있다.
 // 커피숍 마커가 표시될 좌표 배열입니다
